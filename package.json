@@ -1,0 +1,22 @@
+{
+  "name": "timelapseserver",
+  "version": "0.0.0",
+  "description": "Server utility that compiles MP4 and GIF files from images",
+  "main": "server.js",
+  "scripts": {
+    "test": "test.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "gif",
+    "image",
+    "mp4"
+  ],
+  "author": "Mike Vanis",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.2",
+    "express-fileupload": "^0.4.0",
+    "randomstring": "^1.1.5"
+  }
+}
