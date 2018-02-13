@@ -51,8 +51,8 @@ function downloadMP4(directory, outputName, duration, resultObject) {
     });
 }
 
-function compileGIF(directory, outputName, duration) {
-
+function downloadGIF(directory, outputName, duration, resultObject) {
+    
 }
 
 // Post
