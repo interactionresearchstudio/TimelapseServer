@@ -1,7 +1,7 @@
 {
   "name": "timelapseserver",
   "version": "0.1.3",
-  "description": "Server utility that compiles MP4 and GIF files from images",
+  "description": "Server utility that compiles MP4 and GIF files from images.",
   "main": "server.js",
   "scripts": {
     "test": "test.js",
