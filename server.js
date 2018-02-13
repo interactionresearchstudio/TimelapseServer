@@ -8,7 +8,7 @@ const http = require('http');
 const app = express();
 
 // App setup
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 5000);
 app.use(express.static(__dirname + '/public'));
 app.use(fileUpload());
 
@@ -52,7 +52,7 @@ function downloadMP4(directory, outputName, duration, resultObject) {
 }
 
 function downloadGIF(directory, outputName, duration, resultObject) {
-    
+
 }
 
 // Post
