@@ -1,4 +1,4 @@
-FROM ffmpeg:3.3-alpine
+FROM jrottenberg/ffmpeg:3.3-alpine
 
 RUN apk add --update nodejs<8.9.4-suffix nodejs-npm
 
