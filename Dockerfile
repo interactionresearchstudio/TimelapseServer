@@ -1,6 +1,6 @@
-FROM jrottenberg/ffmpeg:3.3-alpine
+FROM node:8.9.4-alpine
 
-RUN apk add --update nodejs<8.9.4-suffix nodejs-npm
+RUN apk update && apk add ca-certificates ffmpeg
 
 # Create app directory
 WORKDIR /usr/src/app
