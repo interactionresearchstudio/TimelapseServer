@@ -5,14 +5,59 @@
     <title>Multi file uploader</title>
 </head>
 <body>
-    <form action="/uploadFiles" method="post" enctype="multipart/form-data">
-        <input type="file" multiple="multiple" accept="image/*" name="uploadedImages"/><br/>
-        Duration (s) <input type="text" name="frameDelay">
+    <form id="file-form" action="/uploadFiles" method="post" enctype="multipart/form-data">
+        <input id="file-input" type="file" multiple="multiple" accept="image/*" name="uploadedImages"/><br/>
+        Duration (s) <input type="text" id="frameDelay">
         <input type="radio" id="gif" name="outputType" value="gif">
         <label for="gif">GIF animation</label>
         <input type="radio" id="mp4" name="outputType" value="mp4">
         <label for="mp4">MP4 video</label>
         <input type="submit" value="Upload"/>
     </form>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js" charset="utf-8"></script>
+    <script type="text/javascript">
+
+var socket = io();
+
+socket.on('downloadMP4', function(msg) {
+    console.log("Download URL: " + msg);
+    $('body').append('<a href="' + msg + '" id="downloadMP4" target="_blank" download>Download MP4</a>');
+});
+
+$(document).ready(function () {
+    $('#file-form').submit(function(e) {
+        console.log("Submit!");
+        e.preventDefault();
+        uploadImages();
+    });
+});
+
+function uploadImages() {
+    var files = $('#file-input').get(0).files;
+
+    if (files.length > 0) {
+        console.log("Counted " + files.length + " files.");
+
+        var formData = new FormData();
+        for(var i=0; i<files.length; i++) {
+            formData.append('images', files[i], files[i].name);
+        }
+        $.ajax({
+            url: '/uploadFiles',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                console.log("Return data: " + data.id);
+                console.log("Requesting to make MP4...");
+                socket.emit('makeMP4', {id: data.id, frameDelay: $('#frameDelay').val()});
+            }
+        });
+    }
+}
+
+    </script>
 </body>
 </html>

@@ -6,6 +6,8 @@ const fs = require('fs');
 const async = require('async');
 const http = require('http');
 const app = express();
+const server = http.createServer(app);
+const io = require('socket.io').listen(server);
 
 // App setup
 app.set('port', process.env.PORT || 8080);
@@ -14,7 +16,7 @@ app.use(fileUpload());
 
 var uploadPath = 'public/uploads/';
 
-function downloadMP4(directory, outputName, duration, resultObject) {
+function makeMP4(directory, outputName, duration, socketID) {
     fs.readdir(directory, function(err, files) {
         for(var i=0; i<files.length; i++) {
             files[i] = directory + '/' + files[i];
@@ -45,7 +47,8 @@ function downloadMP4(directory, outputName, duration, resultObject) {
             })
             .on('end', function (output) {
                 console.log('INFO - Video created in:', output)
-                resultObject.download(directory + '/' + outputName + '.mp4');
+                //resultObject.download(directory + '/' + outputName + '.mp4');
+                io.sockets.connected[socketID].emit("downloadMP4", "uploads/" + outputName + "/" + outputName + '.mp4');
                 return directory + '/' + outputName + '.mp4';
             })
     });
@@ -59,7 +62,7 @@ function downloadGIF(directory, outputName, duration, resultObject) {
 app.post('/uploadFiles', function(req, res) {
     if (!req.files) return res.status(400).send('No files were uploaded.');
 
-    console.log('INFO - Output type: ' + req.body.outputType);
+    //console.log('INFO - Output type: ' + req.body.outputType);
 
     var numOfFilesUploaded = 0;
 
@@ -70,11 +73,11 @@ app.post('/uploadFiles', function(req, res) {
     });
 
     // Move all files to public directory
-    console.log('INFO - found ' + req.files.uploadedImages.length + ' files.');
-    for(var i=0; i < req.files.uploadedImages.length; i++) {
-        imageName = req.files.uploadedImages[i].name;
+    console.log('INFO - found ' + req.files.images.length + ' files.');
+    for(var i=0; i < req.files.images.length; i++) {
+        imageName = req.files.images[i].name;
         console.log('INFO - Image name: ' + imageName);
-        req.files.uploadedImages[i].mv(uploadPath + currentFolderName +
+        req.files.images[i].mv(uploadPath + currentFolderName +
             '/' + currentFolderName + '-' + imageName, function(err) {
             if (err) {
                 console.log(err);
@@ -82,15 +85,30 @@ app.post('/uploadFiles', function(req, res) {
             }
         });
         numOfFilesUploaded++;
-        console.log("INFO - Saved " + req.files.uploadedImages[i].name + " to public folder.");
+        console.log("INFO - Saved " + req.files.images[i].name + " to public folder.");
     }
 
+    if (numOfFilesUploaded == req.files.images.length) {
+        console.log("Finished uploading files.");
+        res.setHeader('Content-Type', 'application/json');
+        res.send(JSON.stringify({ id: currentFolderName }));
+    }
+
+    /*
     // Download file
     if (req.body.outputType == 'mp4')
         downloadMP4(uploadPath + currentFolderName, currentFolderName, parseFloat(req.body.frameDelay), res);
+    */
 });
 
-http.createServer(app).listen(app.get('port'), function() {
+server.listen(app.get('port'), function() {
     console.log('Node version: ' + process.versions.node);
     console.log('Server listening on port ' + app.get('port'));
 })
+
+io.on('connection', function(socket) {
+    socket.on('makeMP4', function(data) {
+        console.log("Starting MP4 with id " + data.id);
+        makeMP4(uploadPath + data.id, data.id, parseFloat(data.frameDelay), socket.id);
+    });
+});
