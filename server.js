@@ -3,7 +3,7 @@ const fileUpload = require('express-fileupload');
 const randomstring = require('randomstring');
 const videoshow = require('videoshow');
 const fs = require('fs');
-const async = require('async');
+const AWS = require('aws-sdk');
 const http = require('http');
 const app = express();
 const server = http.createServer(app);
@@ -14,8 +14,14 @@ app.set('port', process.env.PORT || 8080);
 app.use(express.static(__dirname + '/public'));
 app.use(fileUpload());
 
+// AWS setup
+AWS.config.loadFromPath('./awscredentials.json');
+var s3 = new AWS.S3();
+var bucketName = 'naturewatch-data';
+
 var uploadPath = 'public/uploads/';
 
+// Make MP4 from images within directory.
 function makeMP4(directory, outputName, duration, socketID) {
     fs.readdir(directory, function(err, files) {
         for(var i=0; i<files.length; i++) {
@@ -47,22 +53,38 @@ function makeMP4(directory, outputName, duration, socketID) {
             })
             .on('end', function (output) {
                 console.log('INFO - Video created in:', output)
-                //resultObject.download(directory + '/' + outputName + '.mp4');
                 io.sockets.connected[socketID].emit("downloadMP4", "uploads/" + outputName + "/" + outputName + '.mp4');
                 return directory + '/' + outputName + '.mp4';
             })
     });
 }
 
-function downloadGIF(directory, outputName, duration, resultObject) {
-
+// Save Base 64 file to AWS S3 Bucket
+function saveToS3(bucket, path, key) {
+    fs.readFile(path, function(err, data) {
+        if (err) {
+            console.log("ERROR - Could not read file whilst trying to save to S3.");
+            console.log(err);
+        }
+        params = {
+            Bucket: bucket,
+            Key: key,
+            Body: data
+        };
+        s3.putObject(params, function(err, data) {
+            if (err) {
+                console.log("ERROR - Could not save to S3.");
+                console.log(err);
+            } else {
+                console.log("INFO - Successfully uploaded " + path + " to bucket " + bucket);
+            }
+        });
+    });
 }
 
 // Post
 app.post('/uploadFiles', function(req, res) {
     if (!req.files) return res.status(400).send('No files were uploaded.');
-
-    //console.log('INFO - Output type: ' + req.body.outputType);
 
     var numOfFilesUploaded = 0;
 
@@ -77,38 +99,43 @@ app.post('/uploadFiles', function(req, res) {
     for(var i=0; i < req.files.images.length; i++) {
         imageName = req.files.images[i].name;
         console.log('INFO - Image name: ' + imageName);
-        req.files.images[i].mv(uploadPath + currentFolderName +
-            '/' + currentFolderName + '-' + imageName, function(err) {
+        var currentPath = uploadPath + currentFolderName + '/' +
+            currentFolderName + '-' + imageName;
+        req.files.images[i].mv(currentPath, function(err) {
             if (err) {
+                console.log("ERROR - Could not move files into directory.");
                 console.log(err);
                 return res.status(500).send(err);
             }
         });
         numOfFilesUploaded++;
         console.log("INFO - Saved " + req.files.images[i].name + " to public folder.");
+
+        console.log("INFO - Keep attribute: " + req.body.keep);
+        if (req.body.keep == 'true') {
+            saveToS3(bucketName, currentPath, currentFolderName + '-' + imageName);
+        }
     }
 
+    // Reply to client with transaction ID
     if (numOfFilesUploaded == req.files.images.length) {
         console.log("Finished uploading files.");
         res.setHeader('Content-Type', 'application/json');
         res.send(JSON.stringify({ id: currentFolderName }));
     }
-
-    /*
-    // Download file
-    if (req.body.outputType == 'mp4')
-        downloadMP4(uploadPath + currentFolderName, currentFolderName, parseFloat(req.body.frameDelay), res);
-    */
 });
 
+// Start server
 server.listen(app.get('port'), function() {
     console.log('Node version: ' + process.versions.node);
     console.log('Server listening on port ' + app.get('port'));
 })
 
+// Socket events
 io.on('connection', function(socket) {
+    console.log("INFO - New socket connection opened.");
     socket.on('makeMP4', function(data) {
-        console.log("Starting MP4 with id " + data.id);
+        console.log("INFO - Starting MP4 with id " + data.id);
         makeMP4(uploadPath + data.id, data.id, parseFloat(data.frameDelay), socket.id);
     });
 });

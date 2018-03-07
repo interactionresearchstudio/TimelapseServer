@@ -23,6 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.0",
+    "aws-sdk": "^2.205.0",
     "express": "^4.16.2",
     "express-fileupload": "^0.4.0",
     "randomstring": "^1.1.5",

@@ -7,11 +7,9 @@
 <body>
     <form id="file-form" action="/uploadFiles" method="post" enctype="multipart/form-data">
         <input id="file-input" type="file" multiple="multiple" accept="image/*" name="uploadedImages"/><br/>
-        Duration (s) <input type="text" id="frameDelay">
-        <input type="radio" id="gif" name="outputType" value="gif">
-        <label for="gif">GIF animation</label>
-        <input type="radio" id="mp4" name="outputType" value="mp4">
-        <label for="mp4">MP4 video</label>
+        Duration (s) <input type="text" id="frameDelay" value="0.2"><br/>
+        <input type="checkbox" id="keep" name="keep" value="true">
+        <label for="keep">Check this box if you're happy for us to use your images in publicity.</label><br/>
         <input type="submit" value="Upload"/>
     </form>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" charset="utf-8"></script>
@@ -40,9 +38,14 @@ function uploadImages() {
         console.log("Counted " + files.length + " files.");
 
         var formData = new FormData();
+
         for(var i=0; i<files.length; i++) {
             formData.append('images', files[i], files[i].name);
         }
+
+        if ($('#keep').is(':checked')) formData.set('keep', 'true');
+        else formData.set('keep', 'false');
+
         $.ajax({
             url: '/uploadFiles',
             type: 'POST',
