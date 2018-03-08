@@ -15,7 +15,12 @@ app.use(express.static(__dirname + '/public'));
 app.use(fileUpload());
 
 // AWS setup
-AWS.config.loadFromPath('./awscredentials.json');
+fs.exists('./awscredentials.json', function(exists) {
+    if (exists) {
+        console.log("INFO - Found AWS credentials file.");
+        AWS.config.loadFromPath('./awscredentials.json');
+    }
+};
 var s3 = new AWS.S3();
 var bucketName = 'naturewatch-data';
 
