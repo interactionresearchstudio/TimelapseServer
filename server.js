@@ -113,7 +113,7 @@ app.post('/uploadFiles', function(req, res) {
                 return res.status(500).send(err);
 
             }
-            console.log("INFO - Saved " + req.files.images[i].name + " to public folder.");
+            console.log("INFO - Saved " + imageName + " to public folder.");
             console.log("INFO - Keep attribute: " + req.body.keep);
             if (req.body.keep == 'true') {
                 saveToS3(bucketName, currentPath, currentFolderName + '-' + imageName);
