@@ -97,30 +97,32 @@ app.post('/uploadFiles', function(req, res) {
     var currentFolderName = randomstring.generate(8);
     fs.mkdir(uploadPath + currentFolderName, function(){
         console.log('INFO - Created new directory with random name ' + currentFolderName);
+
+        // Move all files to public directory
+        console.log('INFO - found ' + req.files.images.length + ' files.');
+        for(var i=0; i < req.files.images.length; i++) {
+            imageName = req.files.images[i].name;
+            console.log('INFO - Image name: ' + imageName);
+            var currentPath = uploadPath + currentFolderName + '/' +
+                currentFolderName + '-' + imageName;
+            req.files.images[i].mv(currentPath, function(err) {
+                if (err) {
+                    console.log("ERROR - Could not move file " + imageName + " into directory.");
+                    console.log(err);
+                    return res.status(500).send(err);
+
+                }
+                console.log("INFO - Saved " + imageName + " to public folder.");
+
+                // Save to S3 if allowed by user.
+                console.log("INFO - Keep attribute: " + req.body.keep);
+                if (req.body.keep == 'true') {
+                    saveToS3(bucketName, currentPath, currentFolderName + '-' + imageName);
+                }
+                numOfFilesUploaded++;
+            });
+        }
     });
-
-    // Move all files to public directory
-    console.log('INFO - found ' + req.files.images.length + ' files.');
-    for(var i=0; i < req.files.images.length; i++) {
-        imageName = req.files.images[i].name;
-        console.log('INFO - Image name: ' + imageName);
-        var currentPath = uploadPath + currentFolderName + '/' +
-            currentFolderName + '-' + imageName;
-        req.files.images[i].mv(currentPath, function(err) {
-            if (err) {
-                console.log("ERROR - Could not move files into directory.");
-                console.log(err);
-                return res.status(500).send(err);
-
-            }
-            console.log("INFO - Saved " + imageName + " to public folder.");
-            console.log("INFO - Keep attribute: " + req.body.keep);
-            if (req.body.keep == 'true') {
-                saveToS3(bucketName, currentPath, currentFolderName + '-' + imageName);
-            }
-            numOfFilesUploaded++;
-        });
-    }
 
     // Reply to client with transaction ID
     if (numOfFilesUploaded == req.files.images.length) {
