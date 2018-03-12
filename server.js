@@ -111,15 +111,15 @@ app.post('/uploadFiles', function(req, res) {
                 console.log("ERROR - Could not move files into directory.");
                 console.log(err);
                 return res.status(500).send(err);
-            }
-        });
-        numOfFilesUploaded++;
-        console.log("INFO - Saved " + req.files.images[i].name + " to public folder.");
 
-        console.log("INFO - Keep attribute: " + req.body.keep);
-        if (req.body.keep == 'true') {
-            saveToS3(bucketName, currentPath, currentFolderName + '-' + imageName);
-        }
+            }
+            console.log("INFO - Saved " + req.files.images[i].name + " to public folder.");
+            console.log("INFO - Keep attribute: " + req.body.keep);
+            if (req.body.keep == 'true') {
+                saveToS3(bucketName, currentPath, currentFolderName + '-' + imageName);
+            }
+            numOfFilesUploaded++;
+        });
     }
 
     // Reply to client with transaction ID
